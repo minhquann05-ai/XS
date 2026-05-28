@@ -1,1 +1,153 @@
-
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Archive Viewer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+    .result {
+      font-family: monospace;
+      white-space: pre;
+      background: #f8f9fa;
+      padding: 28px;
+      border-radius: 12px;
+      border: 2px solid #e5e7eb;
+      line-height: 1.65;
+      font-size: 16px;
+      overflow-x: auto;
+    }
+    .today-db {
+      background: linear-gradient(135deg, #fef2f2, #fee2e2);
+      border: 3px solid #f87171;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen py-8">
+  <div class="max-w-4xl mx-auto px-4">
+    <h1 class="text-4xl font-bold text-center text-red-600 mb-2">📅 Data Archive Viewer</h1>
+    <p class="text-center text-gray-600 mb-8">Chọn ngày → Xem 2 bản ghi + 2 số cuối mã chính ngày hôm đó</p>
+    <div class="flex justify-center mb-8">
+      <div class="bg-white shadow-xl rounded-2xl p-6 flex flex-col items-center w-full max-w-md">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Chọn ngày (dd/mm/yyyy)</label>
+        <input type="date" id="selectedDate"
+               class="text-3xl font-semibold text-center border-2 border-gray-300 rounded-xl px-6 py-3 focus:outline-none focus:border-red-500 w-full">
+        <button onclick="loadResults()"
+                class="mt-6 px-10 py-4 bg-red-600 hover:bg-red-700 text-white font-semibold text-xl rounded-2xl transition w-full">
+          Xem dữ liệu
+        </button>
+      </div>
+    </div>
+    <div id="results" class="hidden">
+      <!-- Phần hiển thị 2 số cuối mã chính ngày hôm đó - NGOÀI ô text -->
+      <div id="todayDB" class="today-db rounded-3xl p-8 text-center mb-8 hidden">
+        <p class="text-red-600 text-sm font-medium mb-1">NGÀY ĐƯỢC CHỌN</p>
+        <p id="todayDate" class="text-2xl font-bold text-gray-700"></p>
+        <div class="mt-4">
+          <span class="text-xl text-gray-600">2 số cuối mã chính:</span>
+          <span id="twoLastDB" class="ml-3 text-6xl font-mono font-bold text-red-600 tracking-widest"></span>
+        </div>
+      </div>
+      <!-- Ô text 2 bản ghi cũ -->
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-2xl font-bold text-blue-600">📋 Hai bản ghi gần nhất</h2>
+        <button onclick="copyAll()"
+                class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-2xl flex items-center gap-2 transition">
+          📋 Copy toàn bộ
+        </button>
+      </div>
+      <div id="combinedResult" class="result"></div>
+    </div>
+    <div id="error" class="hidden text-center text-red-500 font-medium mt-6"></div>
+  </div>
+  <script>
+    const DATA_URL = "https://raw.githubusercontent.com/khiemdoan/vietnam-lottery-xsmb-analysis/main/data/xsmb.json";
+   
+    let dataset = null;
+    let dateMap = new Map();
+    async function loadDataset() {
+      if (dataset) return;
+      const res = await fetch(DATA_URL);
+      if (!res.ok) throw new Error("Không tải được dữ liệu");
+      dataset = await res.json();
+     
+      dateMap.clear();
+      dataset.forEach(row => {
+        const dateOnly = row.date.split('T')[0];
+        dateMap.set(dateOnly, row);
+      });
+    }
+    function pad(num, len) {
+      return String(num).padStart(len, '0');
+    }
+    function formatResult(row) {
+      if (!row) return "Không có dữ liệu cho ngày này";
+      return `ĐB ${pad(row.special, 5)}
+G.1 ${pad(row.prize1, 5)}
+G.2 ${pad(row.prize2_1, 5)} ${pad(row.prize2_2, 5)}
+G.3 ${pad(row.prize3_1, 5)} ${pad(row.prize3_2, 5)} ${pad(row.prize3_3, 5)} ${pad(row.prize3_4, 5)} ${pad(row.prize3_5, 5)} ${pad(row.prize3_6, 5)}
+G.4 ${pad(row.prize4_1, 4)} ${pad(row.prize4_2, 4)} ${pad(row.prize4_3, 4)} ${pad(row.prize4_4, 4)}
+G.5 ${pad(row.prize5_1, 4)} ${pad(row.prize5_2, 4)} ${pad(row.prize5_3, 4)} ${pad(row.prize5_4, 4)} ${pad(row.prize5_5, 4)} ${pad(row.prize5_6, 4)}
+G.6 ${pad(row.prize6_1, 3)} ${pad(row.prize6_2, 3)} ${pad(row.prize6_3, 3)}
+G.7 ${pad(row.prize7_1, 2)} ${pad(row.prize7_2, 2)} ${pad(row.prize7_3, 2)} ${pad(row.prize7_4, 2)}`;
+    }
+    function formatVNDate(isoDate) {
+      const [y, m, d] = isoDate.split('-');
+      return `${d}/${m}/${y}`;
+    }
+    async function loadResults() {
+      const input = document.getElementById('selectedDate').value;
+      if (!input) {
+        alert("Vui lòng chọn ngày!");
+        return;
+      }
+      await loadDataset();
+      const selected = new Date(input);
+      const weekAgoDate = new Date(selected); weekAgoDate.setDate(weekAgoDate.getDate() - 7);
+      const dayAgoDate = new Date(selected); dayAgoDate.setDate(dayAgoDate.getDate() - 1);
+      const weekAgoStr = weekAgoDate.toISOString().split('T')[0];
+      const dayAgoStr = dayAgoDate.toISOString().split('T')[0];
+      const todayStr = input; // ngày được chọn
+      const weekRow = dateMap.get(weekAgoStr);
+      const dayRow = dateMap.get(dayAgoStr);
+      const todayRow = dateMap.get(todayStr);
+      const resultsDiv = document.getElementById('results');
+      const combinedDiv = document.getElementById('combinedResult');
+      const todayDiv = document.getElementById('todayDB');
+      const errorDiv = document.getElementById('error');
+      errorDiv.classList.add('hidden');
+      resultsDiv.classList.remove('hidden');
+      todayDiv.classList.add('hidden');
+      // ==================== 2 SỐ CUỐI MÃ CHÍNH NGÀY HÔM ĐÓ (NGOÀI Ô TEXT) ====================
+      if (todayRow) {
+        const twoLast = pad(todayRow.special % 100, 2);
+        document.getElementById('todayDate').textContent = formatVNDate(todayStr);
+        document.getElementById('twoLastDB').textContent = twoLast;
+        todayDiv.classList.remove('hidden');
+      }
+      // ==================== Ô TEXT CHỈ 2 BẢN GHI CŨ ====================
+      let fullText = formatResult(weekRow) + '\n\n' + formatResult(dayRow);
+      combinedDiv.textContent = fullText;
+      if (!weekRow && !dayRow) {
+        errorDiv.innerHTML = `Không tìm thấy dữ liệu cho hai ngày cần xem.<br>
+        <span class="text-sm">Dataset cập nhật đến ngày gần nhất.</span>`;
+        errorDiv.classList.remove('hidden');
+      }
+    }
+    function copyAll() {
+      const text = document.getElementById('combinedResult').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = event.currentTarget;
+        const original = btn.innerHTML;
+        btn.innerHTML = '✅ Đã copy!';
+        setTimeout(() => btn.innerHTML = original, 2000);
+      }).catch(() => alert('Copy thủ công: bôi đen ô bên dưới rồi Ctrl+C'));
+    }
+    window.onload = () => {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('selectedDate').value = today;
+    };
+  </script>
+</body>
+</html>
