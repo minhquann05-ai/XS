@@ -57,7 +57,6 @@
           📋 Copy toàn bộ
         </button>
       </div>
-      <p class="text-xl font-semibold text-gray-700 mb-3">phân tích tương tự cho 2 kỳ này:</p>
       <div id="combinedResult" class="result"></div>
     </div>
     <div id="error" class="hidden text-center text-red-500 font-medium mt-6"></div>
@@ -128,7 +127,12 @@ G.7 ${pad(row.prize7_1, 2)} ${pad(row.prize7_2, 2)} ${pad(row.prize7_3, 2)} ${pa
         todayDiv.classList.remove('hidden');
       }
       // ==================== Ô TEXT CHỈ 2 BẢN GHI CŨ ====================
-      let fullText = formatResult(weekRow) + '\n\n' + formatResult(dayRow);
+      // ==================== Ô TEXT CHỈ 2 BẢN GHI CŨ ====================
+      let fullText = "phân tích tương tự cho 2 kỳ này:\n\n" 
+             + formatResult(weekRow) 
+             + '\n\n' 
+             + formatResult(dayRow);
+
       combinedDiv.textContent = fullText;
       if (!weekRow && !dayRow) {
         errorDiv.innerHTML = `Không tìm thấy dữ liệu cho hai ngày cần xem.<br>
