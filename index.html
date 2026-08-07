@@ -32,7 +32,7 @@
   <div class="max-w-4xl mx-auto px-4">
     <h1 class="text-4xl font-bold text-center text-red-600 mb-2">📅 Data Archive Viewer</h1>
     <p class="text-center text-gray-600 mb-6">Chọn ngày → Xem 2 bản ghi + 2 số cuối mã chính ngày hôm đó</p>
-
+    
     <!-- 2 NGÀY GẦN NHẤT KHÔNG XUẤT HIỆN -->
     <div id="missSection" class="miss-box rounded-3xl p-6 mb-8 text-center shadow-lg">
       <p class="text-yellow-700 text-sm font-medium mb-1"></p>
@@ -81,8 +81,7 @@
 
   <script>
     const DATA_URL = "https://raw.githubusercontent.com/khiemdoan/vietnam-lottery-xsmb-analysis/main/data/xsmb.json";
-    const STORAGE_KEY = "xsmb_miss_days_v2"; // đổi key để tránh cache cũ
-
+    const STORAGE_KEY = "xsmb_miss_days_v2";
     let dataset = null;
     let dateMap = new Map();
 
@@ -91,7 +90,6 @@
       const res = await fetch(DATA_URL);
       if (!res.ok) throw new Error("Không tải được dữ liệu");
       dataset = await res.json();
-
       dateMap.clear();
       dataset.forEach(row => {
         const dateOnly = row.date.split('T')[0];
@@ -156,7 +154,6 @@ G.7 ${pad(row.prize7_1, 2)} ${pad(row.prize7_2, 2)} ${pad(row.prize7_3, 2)} ${pa
 
         const dayAgoStr = addDays(dateStr, -1);
         const weekAgoStr = addDays(dateStr, -7);
-
         const dayRow = dateMap.get(dayAgoStr);
         const weekRow = dateMap.get(weekAgoStr);
 
@@ -165,6 +162,11 @@ G.7 ${pad(row.prize7_1, 2)} ${pad(row.prize7_2, 2)} ${pad(row.prize7_3, 2)} ${pa
         const last2 = Number(row.special) % 100;
         const allPrev = new Set([...getAllLast2(dayRow), ...getAllLast2(weekRow)]);
 
+        // === ĐIỀU KIỆN MỚI ===
+        // Nếu đã có ≥ 45 số thì bỏ qua ngày này (coi như không phải miss)
+        if (allPrev.size >= 45) continue;
+
+        // Chỉ tính là miss khi số ĐB không nằm trong các số đã về
         if (!allPrev.has(last2)) {
           misses.push({
             date: dateStr,
@@ -235,6 +237,7 @@ G.7 ${pad(row.prize7_1, 2)} ${pad(row.prize7_2, 2)} ${pad(row.prize7_3, 2)} ${pa
         alert("Vui lòng chọn ngày!");
         return;
       }
+
       await loadDataset();
 
       const weekAgoStr = addDays(input, -7);
@@ -265,6 +268,7 @@ G.7 ${pad(row.prize7_1, 2)} ${pad(row.prize7_2, 2)} ${pad(row.prize7_3, 2)} ${pa
              + formatResult(weekRow)
              + '\n\n'
              + formatResult(dayRow);
+
       combinedDiv.textContent = fullText;
 
       if (!weekRow && !dayRow) {
