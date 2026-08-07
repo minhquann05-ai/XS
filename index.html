@@ -164,7 +164,7 @@ G.7 ${pad(row.prize7_1, 2)} ${pad(row.prize7_2, 2)} ${pad(row.prize7_3, 2)} ${pa
 
         // === ĐIỀU KIỆN MỚI ===
         // Nếu đã có ≥ 45 số thì bỏ qua ngày này (coi như không phải miss)
-        if (allPrev.size >= 45) continue;
+        if (allPrev.size > 45) continue;
 
         // Chỉ tính là miss khi số ĐB không nằm trong các số đã về
         if (!allPrev.has(last2)) {
